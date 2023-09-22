@@ -14,10 +14,10 @@ export async function postGames(req, res) {
   const games = req.body;
   
   try {
-    if (games.name == null || games.stockTotal <=0 || games.pricePerDay <=0) res.status(400).send();
+    if (games.name == null || games.stockTotal <=0 || games.pricePerDay <=0) return res.status(400).send();
     
     const dbGames = await db.query (`SELECT name FROM games WHERE name = $1;`, [games.name]);
-    if (dbGames.rowCount > 0) res.status(409).send("Already exists");
+    if (dbGames.rowCount > 0) return res.status(409).send("Already exists");
 
     await db.query(`INSERT INTO games 
     (name, image, "stockTotal", "pricePerDay") 
