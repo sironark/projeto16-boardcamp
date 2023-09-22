@@ -4,8 +4,7 @@ export async function getRentals(req, res) {
    const body = req.body;
 
     try {
-        const rental = await db.query(`SELECT * FROM rentals 
-        JOIN customers ON rentals."customerId" = customers.id;`);
+        const rental = await db.query(`SELECT rentals.*,  FROM `);
         console.log(rental.rows)
         
         
