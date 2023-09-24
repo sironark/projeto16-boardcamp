@@ -38,7 +38,7 @@ export async function postRentals(req, res) {
     const dataObject = { data: new Date().toISOString().split('T')[0] };
 
     try {
-        if(body.daysRented < 0) return res.status(400).send();
+        if(body.daysRented <= 0) return res.status(400).send();
         
         const verifyRentGames= await db.query(`SELECT rentals.id, rentals."gameId", rentals."returnDate"
         FROM rentals 

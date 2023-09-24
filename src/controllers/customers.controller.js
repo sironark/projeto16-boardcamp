@@ -61,8 +61,7 @@ export async function putCustomerById(req, res){
     try {
         
         const custUpdate = await db.query(`SELECT * FROM customers WHERE cpf = $1`, [body.cpf]);    
-        if (custUpdate.rowCount == 1 && id == custUpdate.rows[0].id){ 
-        
+        if (!custUpdate.rowCount){ 
         await db.query(`UPDATE customers SET 
         name = $1, phone = $2, cpf = $3, birthday = $4
         WHERE id = $5;`, 
