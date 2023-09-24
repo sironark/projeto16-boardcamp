@@ -17,14 +17,14 @@ export async function postGames(req, res) {
     if (games.name == null || games.stockTotal <=0 || games.pricePerDay <=0) return res.status(400).send();
     
     const dbGames = await db.query (`SELECT name FROM games WHERE name = $1;`, [games.name]);
-    if (dbGames.rowCount > 0) return res.status(409).send("Already exists");
+    if (dbGames.rowCount > 0) return res.status(409).send();
 
     await db.query(`INSERT INTO games 
     (name, image, "stockTotal", "pricePerDay") 
     VALUES ($1, $2, $3, $4);`, 
     [games.name, games.image, games.stockTotal, games.pricePerDay]);
     
-    res.status(200).send("sent");
+    res.status(201).send();
 
   } catch (err) {
     res.status(500).send(err.message);

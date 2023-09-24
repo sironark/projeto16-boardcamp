@@ -38,6 +38,18 @@ export async function postRentals(req, res) {
     const dataObject = { data: new Date().toISOString().split('T')[0] };
 
     try {
+        if(body.daysRented < 0) return res.status(400).send();
+        
+        const verifyRentGames= await db.query(`SELECT rentals.id, rentals."gameId", rentals."returnDate"
+        FROM rentals 
+        WHERE rentals."gameId" = $1 AND rentals."returnDate" IS NULL;`,[body.gameId])
+
+        const verifyAllIdGame = await db.query(`SELECT games."stockTotal" 
+        FROM games 
+        WHERE games.id = $1;`, [body.gameId])
+
+        if(verifyRentGames.rowCount == verifyAllIdGame.rows[0].stockTotal ) return res.status(400).send();
+
         const verifyCustumer = await db.query(`SELECT * 
         FROM customers WHERE id = $1;`, 
         [body.customerId])
@@ -66,7 +78,7 @@ export async function postRentals(req, res) {
         VALUES ($1, $2, $3, $4, $5, $6, $7);`,
         [body.customerId, body.gameId, aux.rentDate, body.daysRented, aux.returnDate, aux.originalPrice, aux.delayFee])
 
-        res.send().status(201)
+        res.status(201).send()
    } catch (err) {
         res.status(500).send(err.message)
    }
@@ -76,21 +88,22 @@ export async function postFinishRental(req, res) {
     const {id} = req.params;
     const date1 = new Date().toISOString().split('T')[0];
     const finalDate = new Date(date1)
+    
     try {
         const dateRent = await db.query(`SELECT 
         rentals."rentDate", rentals."daysRented", rentals."originalPrice", rentals."returnDate"  
         FROM rentals 
         WHERE id = $1;`,[id]);
 
-        if (dateRent.rowCount == 0) res.status(404).send();
-        if (dateRent.rows[0].returnDate != null) res.status(400).send()
+        if (dateRent.rowCount == 0) return res.status(404).send();
+        if (dateRent.rows[0].returnDate != null) return res.status(400).send()
         
         const date2 = (dateRent.rows[0].rentDate.toISOString().split('T')[0]);
         const initialDate = new Date(date2)
         const variationMilis = finalDate - initialDate;
         const variationDate = Math.floor(variationMilis/(1000*60*60*24));
         const delay = (variationDate - dateRent.rows[0].daysRented) * (dateRent.rows[0].originalPrice / dateRent.rows[0].daysRented)
-        const delayFee = delay < (dateRent.rows[0].originalPrice ) ? 0 : delay;
+        const delayFee = delay <= 0 ? 0 : delay;
         
         await db.query(`UPDATE rentals 
         SET "returnDate" = $1, "delayFee" = $2 WHERE id = $3;`, 
@@ -112,8 +125,8 @@ export async function deleteRental(req, res) {
         FROM rentals 
         WHERE id = $1;`, [id])
 
-        if (verifyId.rowCount == 0 ) res.status(404).send();
-        if (verifyId.rows[0].returnDate != null) res.status(400).send();
+        if (verifyId.rowCount == 0 ) return res.status(404).send();
+        if (verifyId.rows[0].returnDate == null) return res.status(400).send();
         
         await db.query(`DELETE 
         FROM rentals 
