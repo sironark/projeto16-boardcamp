@@ -4,39 +4,30 @@ export async function getRentals(req, res) {
    const body = req.body;
 
     try {
-        const rental = await db.query(`SELECT rentals.*,  FROM `);
-        console.log(rental.rows)
-        
-        
-        
-        
-        
-        /*const attRentals = [];
-        rentals.rows.map((rental, index) => {
-        const rent = 
-                {
-                  id: rentals.rows[index].id,
-                  customerId: rentals.rows[index].customerId,
-                  gameId: rentals.rows[index].gameId,
-                  rentDate: rentals.rows[index].rentDate,
-                  daysRented: rentals.rows[index].daysRented,
-                  returnDate: rentals.rows[index].returnDate, 
-                  originalPrice: rentals.rows[index].originalPrice,
-                  delayFee: rentals.rows[index].delayFee,
-                  customer: {
-                   id: 1,
-                   name: 'João Alfredo'
-                  },
-                  game: {
-                    id: 1,
-                    name: 'Banco Imobiliário'
-                  }
-                }
-        attRentals.push(rent)
-    })*/
+        const games = await db.query(`SELECT games.id, games.name 
+        FROM games;`);
+        const rentals = await db.query(`
+        SELECT * FROM rentals;`);
+        const customers = await db.query(`SELECT customers.id, customers.name 
+        FROM customers;`);
 
-        
-        res.send(rentals.rows).status(201)
+        const response = [...rentals.rows];
+        const gamesCustomer = [...games.rows];
+        const infoCustomer = [...customers.rows];
+
+        response.map((res, i) => {
+            infoCustomer.map((cus, index) => {
+                if(res.customerId == cus.id){
+                    res.customer = infoCustomer[index];
+                }
+            })
+            gamesCustomer.map((game, index) =>{
+                if (res.gameId == game.id){
+                    res.game = gamesCustomer[index];
+                }
+            })
+        })        
+        res.send(response).status(201)
    } catch (err) {
         res.status(500).send(err.message)
    }
@@ -82,10 +73,56 @@ export async function postRentals(req, res) {
 }
 
 export async function postFinishRental(req, res) {
-    res.send().status(201)
+    const {id} = req.params;
+    const date1 = new Date().toISOString().split('T')[0];
+    const finalDate = new Date(date1)
+    try {
+        const dateRent = await db.query(`SELECT 
+        rentals."rentDate", rentals."daysRented", rentals."originalPrice", rentals."returnDate"  
+        FROM rentals 
+        WHERE id = $1;`,[id]);
+
+        if (dateRent.rowCount == 0) res.status(404).send();
+        if (dateRent.rows[0].returnDate != null) res.status(400).send()
+        
+        const date2 = (dateRent.rows[0].rentDate.toISOString().split('T')[0]);
+        const initialDate = new Date(date2)
+        const variationMilis = finalDate - initialDate;
+        const variationDate = Math.floor(variationMilis/(1000*60*60*24));
+        const delay = (variationDate - dateRent.rows[0].daysRented) * (dateRent.rows[0].originalPrice / dateRent.rows[0].daysRented)
+        const delayFee = delay < (dateRent.rows[0].originalPrice ) ? 0 : delay;
+        
+        await db.query(`UPDATE rentals 
+        SET "returnDate" = $1, "delayFee" = $2 WHERE id = $3;`, 
+        [finalDate,delayFee,id]);
+
+        res.send().status(200)
+    } catch (error) {
+        res.status(500).send(error.message)
+    }
+
+    
 }
 
 export async function deleteRental(req, res) {
-    res.send().status(201)
+    const {id} = req.params;
+
+    try {
+        const verifyId = await db.query(`SELECT * 
+        FROM rentals 
+        WHERE id = $1;`, [id])
+
+        if (verifyId.rowCount == 0 ) res.status(404).send();
+        if (verifyId.rows[0].returnDate != null) res.status(400).send();
+        
+        await db.query(`DELETE 
+        FROM rentals 
+        WHERE id = $1;`, [id]); 
+
+        res.send().status(200) 
+    } catch (error) {
+        res.status(500).send(error.message)
+    }
+    
 }
 

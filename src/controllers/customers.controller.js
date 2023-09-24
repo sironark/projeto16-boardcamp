@@ -55,7 +55,7 @@ export async function putCustomerById(req, res){
         
         await db.query(`UPDATE customers SET 
         name = $1, phone = $2, cpf = $3, birthday = $4
-        WHERE id = $5`, 
+        WHERE id = $5;`, 
         [body.name, body.phone, body.cpf, body.birthday, id])
 
         res.status(200).send();
