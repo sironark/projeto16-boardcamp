@@ -10,5 +10,6 @@ app.use(express.json());
 app.use(router);
 
 //Port connection
-const PORT = 4000
- app.listen(PORT, () => console.log(`- Running server on port ${PORT}`));
+const PORT = process.env.PORT || 5000;
+
+ app.listen(PORT, () => console.log(`- Running server on port ${PORT} and URL localhost:${PORT}`));
