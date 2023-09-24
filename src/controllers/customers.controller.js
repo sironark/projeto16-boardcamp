@@ -57,13 +57,16 @@ export async function postCustomers(req,res){
 export async function putCustomerById(req, res){
     const body = req.body;
     const {id} = req.params;
-
+   
     try {        
-        const custUpdate = await db.query(`SELECT * FROM customers WHERE cpf = $1`, [body.cpf]);
+        const custUpdate = await db.query(`SELECT customers.cpf, customers.id 
+        FROM customers 
+        WHERE cpf='${body.cpf}' 
+        AND id != $1;`, [id]);
+        
         const custId = await db.query(`SELECT * FROM customers WHERE id = $1`, [id]);
-        if (custUpdate.rowCount > 1) return res.status(409).send();
-
-        if (custId.rowCount && custId.rows[0].cpf == body.cpf){ 
+        
+        if (custId.rowCount && !custUpdate.rowCount){ 
         
         await db.query(`UPDATE customers SET 
         name = $1, phone = $2, cpf = $3, birthday = $4
@@ -71,6 +74,7 @@ export async function putCustomerById(req, res){
         [body.name, body.phone, body.cpf, body.birthday, id])
 
         return res.status(200).send();
+        
       }else{
         return res.status(409).send()
       } 
